@@ -5,6 +5,8 @@ Calico clusters ddPCR data automatically by boosting signals of positive droplet
 
 ### Installation
 
+Download calico by clicking on the green "download/clone" button, then click "Download ZIP". Unzip the archive to the location of your choice. The calico.R script can then be copied to any location.
+
 Calico is designed to be run as a standalone script. It does however require some third-party libraries from CRAN. To install them, just run calico by typing in the command prompt:
 
 `calico.R`
@@ -24,6 +26,10 @@ In Windows you may need to specify the path of Rscript. For example:
 Alternatively in Windows, you can temporarily set the PATH environment variable to automatically point to where R is installed. Start the command line, and at the beginning of a command line session:
 
 `SET PATH=%PATH%;"C:\Program Files\R\R-3.4.1\bin\"` or wherever R is installed.
+
+### Demo
+
+A demo can be run by typing `./example.sh` from the command line (Linux/Mac OS X) or double-clicking `example_windows.bat`. It will analyze an Evagreen-based multiplexed ddPCR dataset.
 
 ### Example usage
 
