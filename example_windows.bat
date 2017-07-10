@@ -1,4 +1,5 @@
-IF EXIST "C:\Program Files\R\R-3.4.1\bin\" SET PATH=%PATH%;"C:\Program Files\R\R-3.4.1\bin\" else ECHO "Can't find R." & PAUSE & EXIT /B
+@ECHO off
+IF EXIST "C:\Program Files\R\R-3.4.1\bin\" (SET PATH=%PATH%;"C:\Program Files\R\R-3.4.1\bin\") else (ECHO "Can't find R. Please edit this file and insert where R is installed." & PAUSE & EXIT /B)
 
 Rscript calico.R -m -i example\data\20160923_MP_BRAFV600E_DNA_StdCurve_D03_Amplitude.csv -o example\results\model_20160923_MP_BRAFV600E_DNA_StdCurve
 Rscript calico.R -c -r example\results\model_20160923_MP_BRAFV600E_DNA_StdCurve -i example\data\20160923_MP_BRAFV600E_DNA_StdCurve_D03_Amplitude.csv -o example\results\20160923_MP_BRAFV600E_DNA_StdCurve_D03_Amplitude.clustered.csv >> example\results\log.txt
