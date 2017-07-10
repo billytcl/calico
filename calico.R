@@ -1,7 +1,9 @@
 #!/usr/bin/env Rscript
 
 #CALICO: Iterative clustering assisted by coarse graining
-
+#Author: Billy Lau, billylau@stanford.edu (Hanlee Ji Lab/Stanford Genome Technology Center)
+#See the most recent source at https://github.com/billytcl/calico
+#Distributed under MIT License
 
 list.of.packages <- c("ggplot2", "png","optparse", "MASS", "raster")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
@@ -16,8 +18,6 @@ library(raster)
 
 ###PARSE ARGUMENTS
 
-#http://tuxette.nathalievilla.org/?p=1696
-
 option_list <- list(
 	make_option(c("-m", "--model"), action="store_true", type="logical", default=F,
 	help="Specify to generate clustering model using reference data. Cannot be used alongside --cluster or --plot."),
@@ -26,7 +26,7 @@ option_list <- list(
 	make_option(c("-p", "--plot"), action="store_true", type="logical", default=F,
 	help="Specify to plot clustered sample data. Cannot be used alongside --model or --cluster"),
 	make_option(c("-i", "--input"), type="character", default=NULL, 
-	help="Input droplet intensity reference/sample file", metavar="INPUT"),
+	help="Input droplet intensity reference/sample/clustered file", metavar="INPUT"),
 	make_option(c("-o", "--output"), type="character", default="out.txt", 
 	help="Output clustering model or clustered intensity file [default= %default]", metavar="OUTPUT"),
 	make_option(c("-r", "--reference"), type="character", default=NULL, 
@@ -39,8 +39,8 @@ option_list <- list(
 	            help="Number of clusters to generate", metavar="NCLUST")
 )
  
-opt_parser <- OptionParser(option_list=option_list);
-opt <- parse_args(opt_parser);
+opt_parser <- OptionParser(option_list=option_list)
+opt <- parse_args(opt_parser)
 
 if (is.null(opt$input)){
   print_help(opt_parser)
@@ -68,55 +68,8 @@ if (!(xor(xor(opt$model,opt$cluster),opt$plot) && !(opt$model && opt$cluster && 
   stop("Only either --model or --cluster or --plot must be specified.\n", call.=FALSE)
 }
  
-###SOME DRAWING FUNCTIONS
-
-#https://github.com/hadley/ggplot2/blob/master/R/stat-ellipse.R
-calculate_ellipse <- function(data, vars, type, level, segments){
-  dfn <- 2
-  dfd <- nrow(data) - 1
-  
-  if (!type %in% c("t", "norm", "euclid")) {
-    message("Unrecognized ellipse type")
-    ellipse <- rbind(as.numeric(c(NA, NA)))
-  } else if (dfd < 3) {
-    message("Too few points to calculate an ellipse")
-    ellipse <- rbind(as.numeric(c(NA, NA)))
-  } else {
-    if (type == "t") {
-      v <- MASS::cov.trob(data[,vars])
-    } else if (type == "norm") {
-      v <- stats::cov.wt(data[,vars])
-    } else if (type == "euclid") {
-      v <- stats::cov.wt(data[,vars])
-      v$cov <- diag(rep(min(diag(v$cov)), 2))
-    }
-    shape <- v$cov
-    center <- v$center
-    chol_decomp <- chol(shape)
-    if (type == "euclid") {
-      radius <- level/max(chol_decomp)
-    } else {
-      radius <- sqrt(dfn * stats::qf(level, dfn, dfd))
-    }
-    angles <- (0:segments) * 2 * pi/segments
-    unit.circle <- cbind(cos(angles), sin(angles))
-    ellipse <- t(center + radius * t(unit.circle %*% chol_decomp))
-  }
-  
-  #ellipse <- as.data.frame(ellipse)
-  #colnames(ellipse) <- vars
-  #ellipse
-  
-  #instead return coords of center, radius, shape
-  ellipse$center <- center
-  ellipse$shape <- shape
-  ellipse$radius <- radius
-  ellipse
-
-}
 
 ## MAIN
-#was 20
 theme_set(theme_bw(35))
 
 if (opt$model) {
@@ -180,7 +133,7 @@ if (opt$model) {
 	ddpcr_final <- ddpcr_data[,c("Ch1","Ch2")]
 	ddpcr_final$cluster <- as.character(ddpcr_kc$cluster)
 
-	#HERE CAN SAVE MODEL PARAMS
+	#here save model parameters
 	ddpcr_cluster_centers <- ddpcr_kc$centers
 
 	#reorder clusters by Ch1 then Ch2 by a mapping vector
@@ -198,29 +151,8 @@ if (opt$model) {
 	  ddpcr_cluster_cov[[i]] <- list()
 	  ddpcr_cluster_cov[[i]]$center <- ddpcr_cluster_centers[i,]
 	  ddpcr_cluster_cov[[i]]$cov <- cov.rob(tmp,method="mve")$cov
-	  #ddpcr_cluster_cov[[i]]$cov <- cov(tmp)
 	}
-  #print(ddpcr_cluster_cov)
-# 	tmp <- subset(ddpcr_final,cluster==1,select=c("Ch1","Ch2"))
-# 	inds <- seq(1,dim(tmp)[1])
-# 	ddpcr_cluster_cov[[1]] <- list()
-# 	ddpcr_cluster_cov[[1]]$center <- ddpcr_cluster_centers[1,]
-# 	ddpcr_cluster_cov[[1]]$cov <- cov.rob(tmp,method="mve")$cov
-# 	
-# 	tmp <- subset(ddpcr_final,cluster==2,select=c("Ch1","Ch2"))
-# 	inds <- seq(1,dim(tmp)[1])
-# 	ddpcr_cluster_cov[[2]] <- list()
-# 	ddpcr_cluster_cov[[2]]$center <- ddpcr_cluster_centers[2,]
-# 	ddpcr_cluster_cov[[2]]$cov <- cov.rob(tmp,method="mve")$cov
-# 	
-# 	tmp <- subset(ddpcr_final,cluster==3,select=c("Ch1","Ch2"))
-# 	inds <- seq(1,dim(tmp)[1])
-# 	ddpcr_cluster_cov[[3]] <- list()
-# 	ddpcr_cluster_cov[[3]]$center <- ddpcr_cluster_centers[3,]
-# 	ddpcr_cluster_cov[[3]]$cov <- cov.rob(tmp,method="mve")$cov
-	
-	#print(ddpcr_cluster_cov)
-	
+
 	save(ddpcr_cluster_cov, ddpcr_final, file=opt$output)
 }
 
@@ -228,9 +160,14 @@ if (opt$model) {
 
 if (opt$cluster) {
 
-	#CLUSTER SAMPLE DATA BASED ON MODEL
-
+	#Cluster sample data based on empirical model
 	load(opt$reference)
+  
+  if (!(exists("ddpcr_final") & exists("ddpcr_cluster_cov")))
+  {
+    print_help(opt_parser)
+    stop("Input reference file seems to be invalid.\n", call.=FALSE)
+  }
 
 	ddpcr_data_new <- read.table(opt$input,skip=1,sep=',')
 	ddpcr_data_new <- ddpcr_data_new[,c("V1","V2")]
@@ -238,22 +175,20 @@ if (opt$cluster) {
 	
 	scores <- as.data.frame(lapply(ddpcr_cluster_cov,function(x) {
 		#mahalanobis(x = ddpcr_data_new[,c("Ch1","Ch2")],cov = x$cov,center = x$center)
+	  tmp_model <- mahalanobis(x = ddpcr_final[,c("Ch1","Ch2")], cov = x$cov, center=x$center)
 	  tmp_m <- mahalanobis(x = ddpcr_data_new[,c("Ch1","Ch2")],cov = x$cov,center = x$center)
 	  #use this to rescale mahalanobis score
-	  scale(tmp_m,center=min(tmp_m),scale=diff(range(tmp_m)))
+	  #scale(tmp_m,center=min(tmp_m),scale=diff(range(tmp_m)))
+	  scale(tmp_m,center=min(tmp_model),scale=diff(range(tmp_model)))
 	}))
 	
+	#occasionally the scores can become a tiny negative number; force these to zero
+	scores[scores<0] <- 0
+	
 	colnames(scores) <- paste("Cluster",c(seq(1,length(ddpcr_cluster_cov))),"Score", sep="")
-	#colnames(scores) <- c("Cluster1Score","Cluster2Score","Cluster3Score")
-	
-	
-	#scores$rest <- rowSums(scores) - apply(scores,1,min)
-	
-	
-	#scores$ratio <- scores$rest / apply(scores,1,min)
+
 	scores$q <- apply(scores,1,function(x) {
 	  min_score <- min(x)
-	  #tmp_score <- sum(x-min_score)
 	  tmp_score <- (sum(min_score/x) - 1)^-1
 		#tmp_score <- (sum(c(min(x[c(1,2,3)])/x[1],min(x[c(1,2,3)])/x[2],min(x[c(1,2,3)])/x[3])) - 1)^-1
 		if (is.nan(tmp_score)) {
@@ -262,11 +197,8 @@ if (opt$cluster) {
 		tmp_score
 		})
 
-	#scores$cluster <- apply(scores,1,function(x) {which.min(x[c(1,2,3)])})
 	scores$cluster <- apply(scores,1,function(x) {
-		#if (x[4] > opt$quality) {
 	  if (tail(x,n=1) > opt$quality) {
-		#which.min(x[c(1,2,3)])
 	    which.min(head(x,-1))
 		} else {
 		0
@@ -274,33 +206,13 @@ if (opt$cluster) {
 	
 	ddpcr_scoring_final <- cbind(ddpcr_data_new[,c("Ch1","Ch2")],scores)
 	ddpcr_scoring_final$cluster <- factor(ddpcr_scoring_final$cluster, levels=seq(1,length(ddpcr_cluster_cov)))
-	
-	#write.table(t(as.matrix(table(ddpcr_scoring_final$cluster))),row.names=as.character(opt$input),col.names=F)
+
 	ddpcr_table <- as.matrix(table(ddpcr_scoring_final$cluster))
 	
-	#the following accounts for nclust>3
-	pos1 <- sum(ddpcr_table) - ddpcr_table[1] - ddpcr_table[3]
-	pos2 <- sum(ddpcr_table) - ddpcr_table[1] - ddpcr_table[2]
-	cnv1 <- log(1-(pos1/sum(ddpcr_table)))/log(1-(pos2/sum(ddpcr_table)))
-	cnv2 <- log(1-(pos2/sum(ddpcr_table)))/log(1-(pos1/sum(ddpcr_table)))
-	
-	#cnv1 <- log(1-(ddpcr_table[2]/sum(ddpcr_table)))/log(1-(ddpcr_table[3]/sum(ddpcr_table)))
-	#cnv2 <- log(1-(ddpcr_table[3]/sum(ddpcr_table)))/log(1-(ddpcr_table[2]/sum(ddpcr_table)))
-  #print(ddpcr_table)
 	cat(sprintf("%s\t%s\t%s\n",opt$input,sum(ddpcr_table),paste(c(ddpcr_table),collapse="\t")))
+
 	#write to file
 	write.csv(ddpcr_scoring_final,opt$output)
-
-	#ALTERNATIVE: CLUSTER BASED ON KMEANS COORDS
-	# centers <- as.data.frame(t(as.data.frame((lapply(ddpcr_cluster_cov,function(x) {x$center})))))
-	# rownames(centers) <- c("Cluster1","Cluster2","Cluster3")
-	# ddpcr_kc <- kmeans(ddpcr_data_new,centers)
-	# print(ddpcr_kc$centers)
-	# ddpcr_scoring_final <- cbind(ddpcr_data_new[,c("Ch1","Ch2")],ddpcr_kc$cluster)
-	# colnames(ddpcr_scoring_final) <- c("Ch1","Ch2","cluster")
-	# print(table(ddpcr_scoring_final$cluster))
-
-	# write.csv(ddpcr_scoring_final,opt$output)
 }
 
 
@@ -308,6 +220,13 @@ if (opt$plot) {
 	
 	#read cluster table
 	ddpcr_scoring_final <- read.csv(opt$input)
+	
+	if (!("q" %in% colnames(ddpcr_scoring_final))) 
+	{
+	  print_help(opt_parser)
+	  stop("This doesn't look like a clustered file. Please run -c first.\n", call.=FALSE)
+	}
+	
 	load(opt$reference)
 	
 	ddpcr_final$cluster <- factor(ddpcr_final$cluster,levels=seq(1,max(ddpcr_final$cluster,na.rm=T)))
@@ -318,16 +237,8 @@ if (opt$plot) {
 	  xlab("Channel 1 Fluorescence (AFU)") +
 	  ylab("Channel 2 Fluorescence (AFU)") +
 	  guides(color=guide_legend(title="Cluster")) +
-	  #stat_ellipse(data=subset(ddpcr_final,cluster==1,select=c("Ch1","Ch2","cluster")),level=0.99,size=2,linetype=2,color="black") +
-	  #stat_ellipse(data=subset(ddpcr_final,cluster==2,select=c("Ch1","Ch2","cluster")),level=0.99,size=2,linetype=2,color="black") +
-	  #stat_ellipse(data=subset(ddpcr_final,cluster==3,select=c("Ch1","Ch2","cluster")),level=0.99,size=2,linetype=2,color="black") +
 	  geom_text(data=as.data.frame(ddpcr_scoring_final[which(is.na(ddpcr_scoring_final$cluster)),]),inherit.aes=T,color="red",label="*",size=20) +
 	  theme(legend.background=element_blank())
-# 	  theme(axis.line=element_line(color="black"),
-# 			panel.border=element_blank(),
-# 			panel.grid.major=element_blank(),
-# 			panel.grid.minor=element_blank(),
-# 			legend.background=element_blank())
 	for (i in 1:max(as.numeric(ddpcr_scoring_final$cluster),na.rm=T)) {
 	  p <- p + stat_ellipse(data=subset(ddpcr_final,cluster==i,select=c("Ch1","Ch2","cluster")),level=0.99,size=2,linetype=2,color="black")
 	}
