@@ -1,6 +1,8 @@
 # calico
 ## Iterative clustering assisted by coarse graining
 
+Calico clusters ddPCR data automatically by boosting signals of positive droplet partitions. No hand drawing of boundaries!
+
 ### Installation
 
 Calico is designed to be run as a standalone script. It does however require some third-party libraries from CRAN. To install them, just run calico by typing in the command prompt:
