@@ -19,18 +19,22 @@ In Windows you may need to specify the path of Rscript. For example:
 
 `"c:\Program Files\R\R-3.4.1\bin\Rscript.exe" calico.R`
 
+Alternatively in Windows, you can temporarily set the PATH environment variable to automatically point to where R is installed. Start the command line, and at the beginning of a command line session:
+
+`SET PATH=%PATH%;"C:\Program Files\R\R-3.4.1\bin\"` or wherever R is installed.
+
 ### Example usage
 
 (You may need to directly call Rscript directly as described above. See "Installation" for an example.)
 
 1. Create an empirical model using a positive control:
-`./calico_raster.R -m -i 01_data/20160923_MP_BRAFV600E_DNA_StdCurve//20160923_MP_BRAFV600E_DNA_StdCurve_D03_Amplitude.csv -o 02_results/20160923_MP_BRAFV600E//model_20160923_MP_BRAFV600E_DNA_StdCurve_D03_Amplitude.csv`
+`./calico.R -m -i example/data/20160923_MP_BRAFV600E_DNA_StdCurve_D03_Amplitude.csv -o example/results/model_20160923_MP_BRAFV600E_DNA_StdCurve`
 
 2. Cluster an unknown dataset using the empirical model:
-`./calico_raster.R -c -r 02_results/20160923_MP_BRAFV600E/model_20160923_MP_BRAFV600E_DNA_StdCurve_D03_Amplitude.csv -i 01_data/20160923_MP_BRAFV600E_DNA_StdCurve//20160923_MP_BRAFV600E_DNA_StdCurve_D03_Amplitude.csv -o 02_results/20160923_MP_BRAFV600E//20160923_MP_BRAFV600E_DNA_StdCurve_D03_Amplitude.clustered.csv >> 02_results/20160923_MP_BRAFV600E//log.txt`
+`./calico.R -c -r example/results/model_20160923_MP_BRAFV600E_DNA_StdCurve -i example/data/20160923_MP_BRAFV600E_DNA_StdCurve_D04_Amplitude.csv -o example/results/20160923_MP_BRAFV600E_DNA_StdCurve_D04_Amplitude.clustered.csv >> example/results/log.txt`
 
 3. (Optional) Draw a figure with the clustered dataset:
-`./calico_raster.R -p -r 02_results/20160923_MP_BRAFV600E/model_20160923_MP_BRAFV600E_DNA_StdCurve_D03_Amplitude.csv -i 02_results/20160923_MP_BRAFV600E//20160923_MP_BRAFV600E_DNA_StdCurve_D03_Amplitude.clustered.csv -o 02_results/20160923_MP_BRAFV600E//20160923_MP_BRAFV600E_DNA_StdCurve_D03_Amplitude.clustered.png`
+`./calico.R -p -r example/results/model_20160923_MP_BRAFV600E_DNA_StdCurve -i example/results/20160923_MP_BRAFV600E_DNA_StdCurve_D04_Amplitude.clustered.csv -o example/results/20160923_MP_BRAFV600E_DNA_StdCurve_D04_Amplitude.clustered.png`
 
 ### Output
 
