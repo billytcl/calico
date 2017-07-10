@@ -5,6 +5,12 @@
 #See the most recent source at https://github.com/billytcl/calico
 #Distributed under MIT License
 
+if (!dir.exists(Sys.getenv("R_LIBS_USER")))
+{
+  dir.create(Sys.getenv("R_LIBS_USER"),recursive = T)
+  .libPaths(c(Sys.getenv("R_LIBS_USER"), .libPaths()))
+}
+
 list.of.packages <- c("ggplot2", "png","optparse", "MASS", "raster")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages, repos="http://cran.rstudio.com")
