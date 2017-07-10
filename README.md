@@ -45,5 +45,6 @@ The plotting (`-p`) stage creates an output PNG with estimated boundaries from t
 There are a number of parameters that you can set:
 
 Number of clusters `-n`: this sets the expected number of clusters from a postive control dataset. Default is 3, and has been tested for 4 with a Taqman ddPCR dataset.
+
 Tiles `-t`: this sets the tile size for the sliding window average. It creates a t x t sliding window to average over the gridded dataset.
 
