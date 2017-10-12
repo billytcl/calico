@@ -40,9 +40,17 @@ option_list <- list(
 	make_option(c("-q", "--quality"), type="double", default=0, 
 	help="Quality score cutoff for de-noising", metavar="QUALITY"),
 	make_option(c("-t", "--tiles"), type="double", default=9, 
-	help="Number of tiles (actually tiles^2) to average for sliding window", metavar="TILES"),
+	help="Number of tiles (actually tiles^2) to average for sliding window. Must be an odd number.", metavar="TILES"),
+	make_option(c("--hard_ch1"), type="double", default=15000,
+	help="Hard limit for Ch1 signal. Set to a very high number to disable.", metavar="HARDCH1"),
+	make_option(c("--hard_ch2"), type="double", default=15000,
+	help="Hard limit for Ch2 signal. Set to a very high number to disable.", metavar="HARDCH2"),
+	make_option(c("--subsample"), type="double", default=1, 
+	help="Subsample droplets. Set to 1 to disable. Useful for densely packed data.", metavar="SUBSAMPLE"),
+	make_option(c("-x", "--resolution"), type="double", default=480,
+	help="Rastering resolution (linear; number of pixels is resolution^2). Useful for densely packed data.", metavar="RESOLUTION"),
 	make_option(c("-n", "--nclust"), type="double", default=3, 
-	            help="Number of clusters to generate", metavar="NCLUST")
+	help="Number of clusters to generate", metavar="NCLUST")
 )
  
 opt_parser <- OptionParser(option_list=option_list)
@@ -94,19 +102,32 @@ if (opt$model) {
 		ddpcr_data_subsample <- rbind(ddpcr_data_subsample, tmp)
 	}
 	
+	
 	ddpcr_data_subsample$Rep <- factor(ddpcr_data_subsample$Rep,levels=seq(1,max(ddpcr_data_subsample$Rep)))
 	max_ch1 <- min(by(ddpcr_data_subsample,ddpcr_data_subsample$Rep,function(X) {X[which.max(X$Ch1),1]},simplify=T))
 	max_ch2 <- min(by(ddpcr_data_subsample,ddpcr_data_subsample$Rep,function(X) {X[which.max(X$Ch2),2]},simplify=T))
 	min_ch1 <- max(by(ddpcr_data_subsample,ddpcr_data_subsample$Rep,function(X) {X[which.min(X$Ch1),1]},simplify=T))
 	min_ch2 <- max(by(ddpcr_data_subsample,ddpcr_data_subsample$Rep,function(X) {X[which.min(X$Ch2),2]},simplify=T))
 	
+	if (max_ch1 > opt$hard_ch1) {
+		max_ch1 <- opt$hard_ch1
+		}
+	if (max_ch2 > opt$hard_ch2) {
+		max_ch2 <- opt$hard_ch2
+		}
 	ddpcr_data <- subset(ddpcr_data, Ch1 > min_ch1 & Ch1 < max_ch1 & Ch2 > min_ch2 & Ch2 < max_ch2)
 	
 	#convert to grid, use sliding window to average in nearby cells on grid
 	#http://gis.stackexchange.com/questions/24588/converting-point-data-into-gridded-dataframe-for-histogram-analysis-using-r
+	
+	if (opt$subsample < 1) {
+		ddpcr_data <- ddpcr_data[sample(nrow(ddpcr_data), floor(opt$subsample * nrow(ddpcr_data))), ]
+		}
+	
 	ddpcr_copy <- ddpcr_data
+	
 	coordinates(ddpcr_copy) <- ~Ch2+Ch1
-	ddpcr_raster <- raster(ncols=480,nrows=480)
+	ddpcr_raster <- raster(ncols=opt$resolution,nrows=opt$resolution)
 	extent(ddpcr_raster) <- extent(ddpcr_copy)
 	ddpcr_raster <- rasterize(ddpcr_copy, ddpcr_raster, 1, background = 0, fun = function(X,...) {
 	  if (length(X) > 0) {
@@ -117,7 +138,7 @@ if (opt$model) {
 	ddpcr_raster <- flip(ddpcr_raster,direction='y')
 	
 	ddpcr_raster_nonzero_focal <- focal(ddpcr_raster,w=matrix(1/opt$tiles,nc=opt$tiles,nr=opt$tiles))
-  ddpcr_raster_nonzero <- as.data.frame(which(as.matrix(ddpcr_raster_nonzero_focal) > 0, arr.ind = T))
+	ddpcr_raster_nonzero <- as.data.frame(which(as.matrix(ddpcr_raster_nonzero_focal) > 0, arr.ind = T))
 	ddpcr_raster_kmeans <- kmeans(ddpcr_raster_nonzero,opt$nclust,nstart = 25)
 	
 	#get extents of raster
@@ -128,8 +149,8 @@ if (opt$model) {
 	#get real coordinates
 	raster_centers <- ddpcr_raster_kmeans$centers
 	raster_centers_locs <- as.matrix(t(apply(raster_centers,1,function(X) {
-	  tmp_y <- raster_extents[1] + ((raster_extents[2] - raster_extents[1]) * X[2]/480)
-	  tmp_x <- raster_extents[3] + ((raster_extents[4] - raster_extents[3]) * X[1]/480)
+	  tmp_y <- raster_extents[1] + ((raster_extents[2] - raster_extents[1]) * X[2]/opt$resolution)
+	  tmp_x <- raster_extents[3] + ((raster_extents[4] - raster_extents[3]) * X[1]/opt$resolution)
 	  c(tmp_x,tmp_y)
 	})))
 	
